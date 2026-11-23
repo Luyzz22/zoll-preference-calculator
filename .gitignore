@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+*.log
+sap_export_log.txt
+Lieferanten_Report_*.xlsx
+sap_lieferanten.csv
+Input.xlsx
+Output.xlsx
+.DS_Store
