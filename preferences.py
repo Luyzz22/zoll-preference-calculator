@@ -1,6 +1,6 @@
 """
-Präferenzkalkulations-Tool für Zollabwicklung
-Automatisiert die Berechnung des EU-Präferenzursprungs
+Excel-Prozentkalkulation (Lernprototyp)
+Demonstriert eine feste 50%-Schwelle ohne Ursprungsregelwerk.
 Autor: Luis Schenk
 """
 
@@ -9,14 +9,15 @@ from openpyxl import load_workbook
 from openpyxl.styles import PatternFill
 import os
 import sys
+import math
 
 def hauptprogramm():
     """
-    Hauptfunktion: Liest Input.xlsx, berechnet Präferenzursprung, schreibt Output.xlsx
+    Hauptfunktion: Liest Input.xlsx, berechnet einen Prozentanteil, schreibt Output.xlsx
     """
     
     print("=" * 50)
-    print("Präferenzkalkulations-Tool für Zollabwicklung")
+    print("Excel-Prozentkalkulation (Lernprototyp)")
     print("=" * 50)
     
     # 1. PRÜFEN OB INPUT-DATEI EXISTIERT
@@ -48,20 +49,31 @@ def hauptprogramm():
     anzahl_zeilen = len(df)
     print(f"✓ {anzahl_zeilen} Zeilen gefunden")
     
+    # Ungueltige Kosten duerfen kein plausibel aussehendes Ergebnis erzeugen.
+    for column in ['Materialkosten_Gesamt', 'EU_Anteil']:
+        df[column] = pd.to_numeric(df[column], errors='coerce')
+    total = df['Materialkosten_Gesamt']
+    part = df['EU_Anteil']
+    valid = total.map(math.isfinite) & part.map(math.isfinite) & (total > 0) & (part >= 0) & (part <= total)
+    if not valid.all():
+        print("FEHLER: Kosten muessen endlich sein; Gesamt > 0 und 0 <= EU_Anteil <= Gesamt.")
+        sys.exit(1)
+
+    print("DEMO: Die 50%-Schwelle ist keine zollrechtliche Ursprungsregel.")
     # 4. BERECHNUNGEN DURCHFÜHREN
-    print(f"\n🔢 Berechne Präferenzursprung...")
+    print(f"\n🔢 Berechne Prozentanteil...")
     
     # EU-Anteil in Prozent berechnen
     df['EU_Anteil_Prozent'] = (df['EU_Anteil'] / df['Materialkosten_Gesamt'] * 100).round(2)
     
-    # Präferenzursprung bestimmen (JA wenn >= 50%, sonst NEIN)
+    # Feste Demo-Schwelle; historische Spaltennamen bleiben kompatibel.
     df['Präferenzursprung'] = df['EU_Anteil_Prozent'].apply(
         lambda x: 'JA' if x >= 50 else 'NEIN'
     )
     
     # Status-Text hinzufügen
     df['Status'] = df['Präferenzursprung'].apply(
-        lambda x: 'Präferenzberechtigt' if x == 'JA' else 'Nicht präferenzberechtigt'
+        lambda x: 'Demo-Schwelle erreicht' if x == 'JA' else 'Demo-Schwelle nicht erreicht'
     )
     
     # 5. OUTPUT-DATEI ERSTELLEN
@@ -121,8 +133,8 @@ def hauptprogramm():
     print("✅ FERTIG!")
     print("=" * 50)
     print(f"📊 Ergebnis:")
-    print(f"   • Präferenzberechtigt (JA):    {ja_anzahl} von {anzahl_zeilen}")
-    print(f"   • Nicht präferenzberechtigt (NEIN): {nein_anzahl} von {anzahl_zeilen}")
+    print(f"   • Demo-Schwelle erreicht (JA):    {ja_anzahl} von {anzahl_zeilen}")
+    print(f"   • Demo-Schwelle nicht erreicht (NEIN): {nein_anzahl} von {anzahl_zeilen}")
     print(f"\n💾 {output_datei} wurde erstellt!")
     print("=" * 50)
 
